@@ -125,7 +125,7 @@
   function submitFortune() {
     const bday = document.getElementById('fortuneBirthdate').value;
     if (!bday) return alert("Please select your birthdate first.");
-    callAppsScript("fortune", { birthday: bday });
+    callAppsScript("fortune", { contents: bday });
   }
 
   // 3.3 Send selected string layout "00" - "99" to "Luckynumber" route
