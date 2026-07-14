@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>โปรแกรมตั้งดวงสุริยยาตร์</title>
+    <style>
+        body { font-family: 'Tahoma', sans-serif; text-align: center; background: #f5f5f5; }
+        .container { max-width: 600px; margin: 20px auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        input, select, button { padding: 8px; margin: 5px; font-size: 16px; }
+        #horoscopeCanvas { background: #fff; margin-top: 20px; border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>ตั้งดวงชะตาสุริยยาตร์</h2>
+    <input type="date" id="birthDate" value="2026-07-14">
+    <input type="time" id="birthTime" value="12:00">
+    <input type="text" id="province" value="กรุงเทพ">
+    <button onclick="getHoroscope()">ผูกดวงชะตา</button>
+
+    <br>
+    <canvas id="horoscopeCanvas" width="400" height="400"></canvas>
+</div>
+
+<script>
+const GAS_URL = "URL_WEB_APP_OF_YOUR_GAS_HERE"; // นำ URL ที่ได้จาก GAS มาใส่ที่นี่
+
+async function getHoroscope() {
+    const dateVal = document.getElementById('birthDate').value.split('-');
+    const timeVal = document.getElementById('birthTime').value;
+    const provinceVal = document.getElementById('province').value;
+
+    const payloadData = {
+        date: dateVal[2],
+        month: dateVal[1],
+        year: dateVal[0],
+        time: timeVal,
+        province: provinceVal
+    };
+
+    const response = await fetch(GAS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain" },
+        body: JSON.stringify({ action: "calc_horoscope", payload: payloadData })
+    });
+
+    const res = await response.json();
+    if (res.status === "success") {
+        drawChart(res.data);
+    } else {
+        alert("เกิดข้อผิดพลาด: " + res.error);
+    }
+}
+
+function drawChart(data) {
+    const canvas = document.getElementById('horoscopeCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    const cx = 200, cy = 200, r = 180;
+    
+    // 1. วาดวงกลมจักรราศีด้านนอก
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // 2. วาดตารางกากบาท 12 ราศีด้านใน (ดวงไทยโบราณ)
+    // ขีดแบ่งช่องสี่เหลี่ยมด้านในดวงจักร
+    for (let i = 0; i < 12; i++) {
+        let angle = (i * 30) * Math.PI / 180;
+        let x1 = cx + r * Math.cos(angle);
+        let y1 = cy + r * Math.sin(angle);
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(x1, y1);
+        ctx.strokeStyle = '#ddd';
+        ctx.stroke();
+    }
+
+    // วงกลมแกนกลางสลักชื่อ
+    ctx.beginPath();
+    ctx.arc(cx, cy, 40, 0, 2 * Math.PI);
+    ctx.strokeStyle = '#000';
+    ctx.stroke();
+
+    // 3. เอาข้อมูลดาวและลัคนาใส่ลงช่องราศี (0 = เมษ อยู่ตำแหน่งขวาหรือบน แล้วแต่วิธีวาด ในที่นี้คำนวณตำแหน่งพิกัดแบบวงกลมสากล)
+    const zodiacNames = ["เมษ", "พฤษภ", "เมถุน", "กรกฎ", "สิงห์", "กันย์", "ตุลย์", "พิจิก", "ธนู", "มกร", "กุมภ์", "มีน"];
+    
+    // สร้าง Array เก็บข้อความที่จะพิมพ์ในแต่ละราศี (0-11)
+    let signSlots = Array(12).fill("");
+
+    // ใส่ลัคนาเข้าไปในช่อง
+    signSlots[data.ascendant.sign] += " [ล] ";
+
+    // ใส่ดาว ๑-๐ ลงในช่องราศีตามที่ GAS ส่งมา
+    for (let p in data.planets) {
+        let targetSign = data.planets[p].sign;
+        signSlots[targetSign] += " " + p;
+    }
+
+    // 4. พิมพ์ตัวอักษรลง Canvas ตามมุมราศี
+    ctx.font = "14px Tahoma";
+    ctx.fillStyle = "#000";
+    for (let i = 0; i < 12; i++) {
+        // จัดการมุมให้อ่านจากราศีเมษทวนเข็มนาฬิกา
+        let angle = (i * 30 - 90) * Math.PI / 180; 
+        let textX = cx + (r - 40) * Math.cos(angle);
+        let textY = cy + (r - 40) * Math.sin(angle);
+        
+        // วาดชื่อราศีจางๆ
+        ctx.fillStyle = "#999";
+        ctx.fillText(zodiacNames[i], cx + (r - 15) * Math.cos(angle) - 10, cy + (r - 15) * Math.sin(angle) + 5);
+        
+        // วาดกลุ่มดาวที่สถิตในราศีนั้น
+        ctx.fillStyle = "#000";
+        ctx.fillText(signSlots[i], textX - 15, textY + 5);
+    }
+}
+</script>
+
+</body>
+</html>
