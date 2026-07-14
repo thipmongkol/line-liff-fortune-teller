@@ -47,6 +47,7 @@ async function getHoroscope() {
 
     const res = await response.json();
     if (res.status === "success") {
+        console.log(res.data);
         drawChart(res.data);
     } else {
         alert("เกิดข้อผิดพลาด: " + res.error);
